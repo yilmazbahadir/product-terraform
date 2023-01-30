@@ -33,16 +33,56 @@ variable "image_pull_policy" {
   default     = "IfNotPresent"
 }
 
-variable "http_port" {
-  type        = number
-  description = "(Optional) Http port"
-  default     = 80
+variable "image_pull_secrets" {
+  description = "(Optional) Image pull secrets"
+  type        = list(string)
+  default     = []
 }
 
-variable "deployment_annotations" {
-  description = "Annotations for deployment"
+variable "replica_count" {
+  description = "(Optional) Replica count of deployment pods"
+  type        = number
+  default     = 1
+}
+
+variable "http_port" {
+  description = "(Optional) Http port"
+  type        = number
+  default     = 4000
+}
+
+variable "config_endpoints" {
+  description = "(Optional) Config endpoints"
+  type = object({
+    market_data        = string
+    statistics_service = string
+  })
+  default = {
+    market_data        = "https://min-api.cryptocompare.com/"
+    statistics_service = "https://symbol.services"
+  }
+}
+
+variable "config_network" {
+  description = "(Optional) Config endpoints"
+  type = object({
+    namespace_name     = string
+    mosaic_id          = string
+    divisibility       = number
+    network_identifier = number
+  })
+  default = {
+    divisibility       = 6
+    mosaic_id          = "6BED913FA20223F8"
+    namespace_name     = "symbol.xym"
+    network_identifier = 104
+  }
+}
+
+variable "pod_annotations" {
+  description = "Annotations for pod"
   type        = map(string)
-  default     = null
+  default     = {}
 }
 
 variable "custom_labels" {
@@ -69,8 +109,7 @@ variable "pod_security_context" {
     runAsUser  = number
     runAsGroup = number
   })
-  default = {
-  }
+  default = null
 }
 
 variable "liveness_probe_enabled" {
@@ -107,6 +146,15 @@ variable "readiness_probe_period" {
   description = "(Optional) Readiness probe period seconds"
   type        = number
   default     = 120
+}
+
+variable "resources" {
+  description = "(Optional) Resource limits and requests"
+  type = object({
+    limits   = map(any),
+    requests = map(any)
+  })
+  default = null
 }
 
 variable "termination_grace_period" {
@@ -150,7 +198,7 @@ variable "ingress_rules" {
       {
         path                 = "/"
         path_type            = "ImplementationSpecific"
-        backend_service_port = 80
+        backend_service_port = 4000
       }
     ]
   }]

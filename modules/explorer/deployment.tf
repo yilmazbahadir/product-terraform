@@ -21,12 +21,20 @@ resource "kubernetes_deployment_v1" "this" {
       }
 
       spec {
-        image_pull_secrets = var.image_pull_secrets
-        security_context {
-          count = var.pod_security_context.runAsUser != null ? 1 : 0
+        dynamic "image_pull_secrets" {
+          for_each = var.image_pull_secrets
 
-          run_as_user  = var.pod_security_context.runAsUser
-          run_as_group = var.pod_security_context.runAsGroup
+          content {
+            name = image_pull_secrets
+          }
+        }
+
+        dynamic "security_context" {
+          for_each = var.pod_security_context != null ? { security_context_enabled = true } : {}
+          content {
+            run_as_user  = var.pod_security_context.runAsUser
+            run_as_group = var.pod_security_context.runAsGroup
+          }
         }
 
         container {
@@ -41,7 +49,9 @@ resource "kubernetes_deployment_v1" "this" {
           }
 
           env_from {
-            config_map_ref = local.full_name
+            config_map_ref {
+              name = local.full_name
+            }
           }
 
           dynamic "liveness_probe" {
@@ -68,9 +78,13 @@ resource "kubernetes_deployment_v1" "this" {
               period_seconds        = var.readiness_probe_period
             }
           }
-          resources {
-            limits   = var.resources.limits
-            requests = var.resources.requestes
+          dynamic "resources" {
+            for_each = var.resources != null ? { resources_enabled = true } : {}
+
+            content {
+              limits   = var.resources.limits
+              requests = var.resources.requests
+            }
           }
         }
       }
